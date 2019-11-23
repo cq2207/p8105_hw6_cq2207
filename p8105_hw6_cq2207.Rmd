@@ -18,7 +18,7 @@ library(mgcv)
 
 # Problem 1
 
-Load and clean the data for regression analysis
+_Load and clean the data for regression analysis_
 
 ```{r}
 
@@ -33,13 +33,82 @@ bwt =
     premature = if_else(gaweeks>37, "not premature", "premature")
   )
 
+
 ```
 
-Propose a regression model for birthweight:
+_Propose a regression model for birthweight.This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot:_
+
+The proposed model below was based on my knowledge and experience with predictors of negative pregnancy outcomes, such as low birthweight. These include, maternal pre-pregnancy weight, maternal weight gained, gestational age in weeks, and presence of malformations. 
+Malformation was included in the final model, regardless of its significance, because of its clinical relevance to this issue.
+```{r}
+
+model1 = lm(bwt ~ ppwt + wtgain + gaweeks + malform, data = bwt)
+
+summary(model1)
+
+#plot residuals
+
+bwt %>%
+modelr::add_residuals(model1) %>%
+modelr::add_predictions(model1) %>% 
+ggplot(aes(x = pred, y = resid)) + 
+  geom_point(alpha = 0.5, color = "light blue") + geom_hline(yintercept = 0, color = "red") + 
+  labs(
+    title = "Residuals Against Fitted Values",
+    x = "Predicted Birtweight (grams)",
+    y = "Residuals"
+   ) +
+  theme_set(theme_minimal() + theme(legend.position = "top"))
+
+```
+
+_Compare your model to two others. Make this comparison in terms of the cross-validated prediction error.:_
 
 ```{r}
 
+#One using length at birth and gestational age as predictors (main effects only)
 
+model_main = lm(bwt ~ blength + gaweeks, data = bwt)
+summary(model_main)
+
+
+#One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+
+model_inter = lm(bwt ~ bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = bwt)
+summary(model_inter)
+
+#Cross Validation
+
+cv_df = 
+  crossv_mc(bwt, 100) %>%
+  mutate(
+        train = map(train, as_tibble),
+        test = map(test, as_tibble)
+        ) %>%
+  mutate(model1  = map(train, ~lm(bwt ~ ppwt + wtgain + gaweeks + malform, data=.x)),
+         model_main  = map(train, ~lm(bwt ~ blength + gaweeks, data=.x)),
+         model_inter  = map(train, ~lm(bwt ~ (bhead + blength + babysex)^3, data=.x))) %>% 
+  mutate(rmse_model1 = map2_dbl(model1, test, ~rmse(model = .x, data = .y)),
+         rmse_main = map2_dbl(model_main, test, ~rmse(model = .x, data = .y)),
+         rmse_interaction = map2_dbl(model_inter, test, ~rmse(model = .x, data = .y)))
+
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin() +
+    labs(
+    title = "Comparison of Models",
+    x = "Model",
+    y = "rmse"
+   ) +
+  theme_set(theme_minimal() + theme(legend.position = "top"))
 
 ```
+
+Based on the violin plot above of the prediction error distributions for the three models, the model that includes the main effects and all interactions of head circumference, length, and sex yields the lowest range of prediction error relative to the other two. Therefore, `model_inter` is the best model for predicting birthweight, out of the ones tested here.
 
