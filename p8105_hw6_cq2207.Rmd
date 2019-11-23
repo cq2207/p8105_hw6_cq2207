@@ -112,3 +112,24 @@ cv_df %>%
 
 Based on the violin plot above of the prediction error distributions for the three models, the model that includes the main effects and all interactions of head circumference, length, and sex yields the lowest range of prediction error relative to the other two. Therefore, `model_inter` is the best model for predicting birthweight, out of the ones tested here.
 
+# Problem 2
+
+_Download dataset_
+
+```{r}
+
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+weather_df
+
+```
+
