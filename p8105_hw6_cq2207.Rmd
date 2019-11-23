@@ -8,3 +8,38 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(modelr)
+library(mgcv)
+```
+
+# Problem 1
+
+Load and clean the data for regression analysis
+
+```{r}
+
+bwt =
+  read.csv("./data/birthweight.csv") %>%
+  janitor::clean_names() %>%
+  mutate(
+    babysex = factor(babysex, levels = c(1, 2), labels = c("male", "female")),
+    frace = factor(frace, levels = c(1, 2, 3, 4, 8, 9), labels = c("white", "black", "asian", "puerto rican", "other", "unknown")),
+    malform = factor(malform, levels = c(0, 1), labels = c("absent", "present")),
+    mrace = factor(mrace, levels = c(1, 2, 3, 4, 8, 9), labels = c("white", "black", "asian", "puerto rican", "other", "unknown")),
+    premature = if_else(gaweeks>37, "not premature", "premature")
+  )
+
+```
+
+Propose a regression model for birthweight:
+
+```{r}
+
+
+
+```
+
