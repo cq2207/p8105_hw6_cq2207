@@ -206,10 +206,16 @@ plot1 + plot2
 
 ```
 
+The distribution of values of R-squared and log (b0*b1) are roughly normal.
 
 _Identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r̂ 2 andlog(β̂ 0∗β̂ 1)_
 
 ```{r}
 
+quantile(pull(bootstrap_results2, r.squared), probs = c(0.025, 0.975)) 
+
+quantile(pull(bootstrap_results, log), probs = c(0.025, 0.975)) 
+
 ```
 
+The 95% CI for R-squared is (0.894, 0.927) and the 95% confidence interval for log(b0*b1) is (1.965, 2.058).
