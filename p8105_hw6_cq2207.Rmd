@@ -14,6 +14,7 @@ library(tidyverse)
 library(ggplot2)
 library(modelr)
 library(mgcv)
+library(patchwork)
 ```
 
 # Problem 1
@@ -129,6 +130,7 @@ weather_df =
     tmin = tmin / 10,
     tmax = tmax / 10) %>%
   select(name, id, everything())
+
 ```
 
 _Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of r̂ 2 and log(β̂ 0∗β̂ 1)._
@@ -146,35 +148,61 @@ boot_straps =
   )
 
 #Log B0*B1 estimates
-bootstrap_results = 
+
+bootstrap_results =
   boot_straps %>% 
   mutate(
     models = map(strap_sample, ~lm(tmax ~ tmin, data=.x)),
-    results1 = map(models, broom::tidy)
-    ) %>% 
-  unnest(cols = c(results1)) %>%
-  select(strap_number, models:estimate) %>% 
-  pivot_wider(names_from = term, values_from = estimate) %>%
-  janitor::clean_names() %>%
-  rename(b0 = intercept, b1 = tmin) %>%
-  mutate(log_B0B1 = log(b0*b1))
+    results = map(models, broom::tidy)) %>% 
+  select(-strap_sample, -models) %>% 
+  unnest(cols = c(results)) %>% 
+  select(strap_number, term, estimate) %>% 
+  pivot_wider(
+    names_from = "term",
+    values_from = "estimate"
+  ) %>% 
+  janitor::clean_names() %>% 
+  mutate(log = log(intercept*tmin)) 
+
 
 #R-squared estimates
   
 bootstrap_results2 =
-   boot_straps %>% 
-    mutate(
+  boot_straps %>% 
+  mutate(
     models = map(strap_sample, ~lm(tmax ~ tmin, data=.x)),
-    results2 = map(models, broom::glance)
-    ) %>%
-    select(-strap_sample, -models)%>% 
-    unnest(cols = c(results2)) 
+    results = map(models, broom::glance)) %>% 
+  select(-strap_sample, -models)%>% 
+  unnest(cols = c(results))
 
 ```
 
 _Plot the distribution of your estimates, and describe these in words._
 
 ```{r}
+
+plot1 =
+  ggplot(
+    data = bootstrap_results, 
+    aes(x=log)) +
+  geom_histogram() + 
+  labs(
+    title = "Distribution of Log of B0*B1 Estimates",
+    x = "Log b0*b1",
+    y = "Count"
+    ) 
+    
+plot2 = 
+  ggplot(data = bootstrap_results2, 
+         aes(x = r.squared)) + 
+  geom_histogram() + 
+  labs(
+    title = "Distribution of R-squared Estimates",
+    x = "R-Squared",
+    y = "Count"
+    )
+
+plot1 + plot2
 
 ```
 
